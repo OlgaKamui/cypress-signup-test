@@ -1,0 +1,18 @@
+describe('Select Sweden as country', () => {
+  it('select Sweden during a signup', () => {
+    cy.visit('https://circula-qa-challenge.vercel.app/users/sign_up');
+    cy.get('input[type="email"]').type(‘test4task@test.com’);  // enters email
+    cy.get('input[type="password"]').type('1q2w3e4r'); // enters password 
+    cy.get('svg.sc-c88fe187-0 ffwyev use[href="#check"]').click(); // click the first check
+    cy.get('button[type="submit"]').click();  // click Try for free
+
+// contact details page
+    cy.get('input[name="firstname"]').type('name');  // enters first name
+    cy.get('input[name="lastname"]').type('lastname');  // enters lastname
+    cy.get('button[type="submit"]').click(); // clicks Next step
+
+// Company information page
+    cy.get('input[name="country"]').clear().type('Sweden'); // clear the country field and type Sweden
+    cy.contains('[role="combobox"]', 'Sweden').click(); // click Sweden in dropdown suggestions
+  });
+});
