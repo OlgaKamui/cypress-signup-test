@@ -1,18 +1,60 @@
-describe('Select Sweden as country', () => {
-  it('select Sweden during a signup', () => {
-    cy.visit('https://circula-qa-challenge.vercel.app/users/sign_up');
-    cy.get('input[type="email"]').type(‘test4task@test.com’);  // enters email
-    cy.get('input[type="password"]').type('1q2w3e4r'); // enters password 
-    cy.get('svg.sc-c88fe187-0 ffwyev use[href="#check"]').click(); // click the first check
-    cy.get('button[type="submit"]').click();  // click Try for free
+describe('Select Sweden as country in signup', () => {
+    const firstTwoStepsSignup = () => {
+        
+        cy.visit('https://circula-qa-challenge.vercel.app/users/sign_up');
+        
+        // Step 1/3
+        cy.get('#usercentrics-root', { timeout: 10000 }).shadow().find('[data-testid="uc-deny-all-button"]').click(); // once cookie banner appears click deny all to close it
 
-// contact details page
-    cy.get('input[name="firstname"]').type('name');  // enters first name
-    cy.get('input[name="lastname"]').type('lastname');  // enters lastname
-    cy.get('button[type="submit"]').click(); // clicks Next step
+        cy.get('form[name="signup"] input[type="email"]').type('test4task@test.com');  // enters email
+        cy.get('form[name="signup"] input[type="password"]').type('1q2w3e4r'); // enters password 
+        cy.get('form[name="signup"] input[type="checkbox"][name="acceptTos"]').parent('label').click('left'); // click the first check
+        cy.get('form[name="signup"] button[type="submit"]').click();  // click Try for free
 
-// Company information page
-    cy.get('input[name="country"]').clear().type('Sweden'); // clear the country field and type Sweden
-    cy.contains('[role="combobox"]', 'Sweden').click(); // click Sweden in dropdown suggestions
-  });
-});
+        // Step 2/3
+        cy.get('form[name="signup"] input[name="firstname"]').type('name');  // enters first name
+        cy.get('form[name="signup"] input[name="lastname"]').type('lastname');  // enters lastname
+        cy.get('form[name="signup"] button[type="submit"]').click(); // clicks Next step
+    }
+    
+    it('selects Sweden by typing', () => {
+        firstTwoStepsSignup();
+
+        // Step 3/3
+        cy.get('form[name="signup"] input[name="country"]')
+            .click()
+            .clear({ force: true }) // clear the country field
+            .wait(1000) // cypress fails to clear sometimes
+            .type('Swed');
+        
+        cy.contains('[role="option"]', 'Sweden').click(); // click Sweden in dropdown suggestions
+        cy.get('form[name="signup"] input[name="country"]').should('have.value', 'Sweden'); // check that Sweden is selected
+    })
+
+    it('moves through dropdown via keyboard', () => {
+        firstTwoStepsSignup();
+        
+        const countryInput = cy.get('form[name="signup"] input[name="country"]');
+
+        function findAndSelectSweden(attemptsLeft = 200) { // in case if more countries are added later
+            if (attemptsLeft === 0)
+                throw 'Sweden not found';
+
+            countryInput.type('{downarrow}'); // move through dropdown by pressing down key
+
+            let swedenHighlighted = false;
+            return cy.get('[data-testid="autocomplete-menu-portal"] li[role="option"]').each(($el) => { // check each element (country)
+                if (!swedenHighlighted && $el.css('background-color')  === 'rgb(248, 248, 250)' && $el.text() === "Sweden") {
+                    swedenHighlighted = true; // highlighted country in the dropdown has a different background color
+                }
+            }).then(() => {
+                if (swedenHighlighted) {
+                    return countryInput.type('{enter}'); // press Enter if Sweden is higlighted and exit function
+                }
+                return findAndSelectSweden(attemptsLeft - 1); // else call function, reduce attempts number
+            })
+        }
+        findAndSelectSweden().should('have.value', 'Sweden'); // check that input field has Sweden
+
+    });
+})
